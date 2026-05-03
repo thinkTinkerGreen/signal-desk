@@ -8,11 +8,13 @@ import {
   Activity,
   Settings,
   ScrollText,
+  Globe2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/market", label: "Market Explorer", icon: Globe2 },
   { path: "/signals", label: "Signals", icon: TrendingUp },
   { path: "/portfolio", label: "Portfolio", icon: Briefcase },
   { path: "/positions", label: "Positions", icon: List },
@@ -43,14 +45,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <p className="text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest">
-            Trading Intelligence
+            Bloomberg-style Terminal
           </p>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-2 py-4 space-y-0.5">
+        <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
           {navItems.map(({ path, label, icon: Icon }) => {
-            const isActive = path === "/" ? location === "/" : location.startsWith(path);
+            const isActive =
+              path === "/"
+                ? location === "/"
+                : location.startsWith(path);
             return (
               <Link
                 key={path}
@@ -62,7 +67,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground border border-transparent"
                 )}
               >
-                <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover:text-sidebar-foreground")} />
+                <Icon
+                  className={cn(
+                    "w-4 h-4 flex-shrink-0",
+                    isActive
+                      ? "text-primary"
+                      : "text-muted-foreground group-hover:text-sidebar-foreground"
+                  )}
+                />
                 {label}
                 {isActive && (
                   <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
@@ -87,7 +99,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground border border-transparent"
                 )}
               >
-                <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover:text-sidebar-foreground")} />
+                <Icon
+                  className={cn(
+                    "w-4 h-4 flex-shrink-0",
+                    isActive
+                      ? "text-primary"
+                      : "text-muted-foreground group-hover:text-sidebar-foreground"
+                  )}
+                />
                 {label}
                 {isActive && (
                   <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />

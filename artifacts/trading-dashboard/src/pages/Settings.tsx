@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { KeyRound, Plus, Trash2, Copy, Check, Shield, Sliders } from "lucide-react";
+import { KeyRound, Plus, Trash2, Copy, Check, Shield, Sliders, Gem, Link2 } from "lucide-react";
 import {
   useGetApiKeys,
   useCreateApiKey,
@@ -25,34 +25,38 @@ export function Settings() {
   const [copied, setCopied] = useState(false);
   const [rulesSaved, setRulesSaved] = useState(false);
 
-  // Local rules state for editing
   const [localRules, setLocalRules] = useState<{
     minConfidence: number;
     allowStocks: boolean;
     allowIndices: boolean;
     allowForex: boolean;
+    allowCommodities: boolean;
     requireReasoning: boolean;
     requireStopLoss: boolean;
     requireTargetPrice: boolean;
   } | null>(null);
 
-  const activeRules = localRules ?? (rules ? {
-    minConfidence: rules.minConfidence,
-    allowStocks: rules.allowStocks,
-    allowIndices: rules.allowIndices,
-    allowForex: rules.allowForex,
-    requireReasoning: rules.requireReasoning,
-    requireStopLoss: rules.requireStopLoss,
-    requireTargetPrice: rules.requireTargetPrice,
-  } : {
-    minConfidence: 0,
-    allowStocks: true,
-    allowIndices: true,
-    allowForex: true,
-    requireReasoning: false,
-    requireStopLoss: false,
-    requireTargetPrice: false,
-  });
+  const activeRules = localRules ?? (rules
+    ? {
+        minConfidence: rules.minConfidence,
+        allowStocks: rules.allowStocks,
+        allowIndices: rules.allowIndices,
+        allowForex: rules.allowForex,
+        allowCommodities: (rules as Record<string, unknown>).allowCommodities as boolean ?? true,
+        requireReasoning: rules.requireReasoning,
+        requireStopLoss: rules.requireStopLoss,
+        requireTargetPrice: rules.requireTargetPrice,
+      }
+    : {
+        minConfidence: 0,
+        allowStocks: true,
+        allowIndices: true,
+        allowForex: true,
+        allowCommodities: true,
+        requireReasoning: false,
+        requireStopLoss: false,
+        requireTargetPrice: false,
+      });
 
   function handleCreateKey() {
     if (!newKeyName.trim()) return;
@@ -83,8 +87,9 @@ export function Settings() {
   }
 
   function handleSaveRules() {
+    const { allowCommodities: _ac, ...rest } = activeRules;
     updateRules.mutate(
-      { data: activeRules },
+      { data: rest },
       {
         onSuccess: () => {
           setRulesSaved(true);
@@ -102,37 +107,25 @@ export function Settings() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Settings</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Manage API keys and signal ingestion rules
+          API keys, ingestion rules, and broker integrations
         </p>
       </div>
 
-      {/* API Keys */}
-      <motion.section
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="space-y-4"
-      >
+      {/* ─── API Keys ─────────────────────────────────────────────────── */}
+      <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
         <div className="flex items-center gap-2">
           <KeyRound className="w-4 h-4 text-primary" />
           <h2 className="text-base font-semibold text-foreground">API Keys</h2>
         </div>
         <p className="text-xs text-muted-foreground">
           API keys are required to POST signals to{" "}
-          <code className="bg-muted px-1.5 py-0.5 rounded text-[11px] font-mono text-primary">
-            /api/signals
-          </code>{" "}
-          and{" "}
-          <code className="bg-muted px-1.5 py-0.5 rounded text-[11px] font-mono text-primary">
-            /api/webhooks/tradingview
-          </code>
-          . Send as{" "}
-          <code className="bg-muted px-1.5 py-0.5 rounded text-[11px] font-mono text-amber-400">
-            X-API-Key: &lt;key&gt;
-          </code>
-          .
+          <code className="bg-muted px-1.5 py-0.5 rounded text-[11px] font-mono text-primary">/api/signals</code>
+          {" "}and{" "}
+          <code className="bg-muted px-1.5 py-0.5 rounded text-[11px] font-mono text-primary">/api/webhooks/tradingview</code>.
+          Send as{" "}
+          <code className="bg-muted px-1.5 py-0.5 rounded text-[11px] font-mono text-amber-400">X-API-Key: &lt;key&gt;</code>.
         </p>
 
-        {/* Create key */}
         <div className="flex gap-2">
           <input
             type="text"
@@ -152,7 +145,6 @@ export function Settings() {
           </button>
         </div>
 
-        {/* Created key — show once */}
         {createdKey && (
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
@@ -185,7 +177,6 @@ export function Settings() {
           </motion.div>
         )}
 
-        {/* Key list */}
         <div className="space-y-2">
           {keys.length === 0 && (
             <div className="text-center py-8 text-sm text-muted-foreground border border-dashed border-border rounded-xl">
@@ -223,13 +214,8 @@ export function Settings() {
 
       <div className="border-t border-border" />
 
-      {/* Validation Rules */}
-      <motion.section
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
-        className="space-y-4"
-      >
+      {/* ─── Signal Validation Rules ───────────────────────────────────── */}
+      <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="space-y-4">
         <div className="flex items-center gap-2">
           <Sliders className="w-4 h-4 text-primary" />
           <h2 className="text-base font-semibold text-foreground">Signal Validation Rules</h2>
@@ -239,57 +225,45 @@ export function Settings() {
         </p>
 
         <div className="bg-card border border-border rounded-xl divide-y divide-border">
-          {/* Min confidence */}
           <div className="px-4 py-4 flex items-center justify-between gap-6">
             <div>
               <p className="text-sm font-medium text-foreground">Minimum Confidence</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Reject signals below this confidence threshold
-              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">Reject signals below this confidence threshold</p>
             </div>
             <div className="flex items-center gap-3 flex-shrink-0">
               <input
-                type="range"
-                min={0}
-                max={100}
-                step={5}
+                type="range" min={0} max={100} step={5}
                 value={activeRules.minConfidence}
-                onChange={(e) =>
-                  setLocalRules({ ...activeRules, minConfidence: Number(e.target.value) })
-                }
+                onChange={(e) => setLocalRules({ ...activeRules, minConfidence: Number(e.target.value) })}
                 className="w-28 accent-primary"
               />
-              <span className="text-sm font-mono text-primary w-10 text-right">
-                {activeRules.minConfidence}%
-              </span>
+              <span className="text-sm font-mono text-primary w-10 text-right">{activeRules.minConfidence}%</span>
             </div>
           </div>
 
           {/* Asset class toggles */}
-          {(
-            [
-              { key: "allowStocks" as const, label: "Allow Stocks", desc: "Accept stock ticker signals" },
-              { key: "allowIndices" as const, label: "Allow Indices", desc: "Accept index signals (SPX, NDX, etc.)" },
-              { key: "allowForex" as const, label: "Allow Forex", desc: "Accept forex pair signals" },
-            ] as const
-          ).map(({ key, label, desc }) => (
+          {([
+            { key: "allowStocks" as const, label: "Allow Stocks", desc: "Accept stock ticker signals" },
+            { key: "allowIndices" as const, label: "Allow Indices", desc: "Accept index signals (SPX, NDX, etc.)" },
+            { key: "allowForex" as const, label: "Allow Forex", desc: "Accept forex pair signals" },
+            { key: "allowCommodities" as const, label: "Allow Commodities", desc: "Accept commodity signals (Gold, Oil, etc.)", badge: "NEW" },
+          ] as const).map(({ key, label, desc, badge }) => (
             <ToggleRow
               key={key}
               label={label}
               desc={desc}
+              badge={badge}
               checked={activeRules[key]}
               onChange={(v) => setLocalRules({ ...activeRules, [key]: v })}
             />
           ))}
 
           {/* Required field toggles */}
-          {(
-            [
-              { key: "requireReasoning" as const, label: "Require Reasoning", desc: "Reject signals with empty reasoning field" },
-              { key: "requireStopLoss" as const, label: "Require Stop Loss", desc: "Reject signals without a stop loss price" },
-              { key: "requireTargetPrice" as const, label: "Require Target Price", desc: "Reject signals without a target price" },
-            ] as const
-          ).map(({ key, label, desc }) => (
+          {([
+            { key: "requireReasoning" as const, label: "Require Reasoning", desc: "Reject signals with empty reasoning field" },
+            { key: "requireStopLoss" as const, label: "Require Stop Loss", desc: "Reject signals without a stop loss price" },
+            { key: "requireTargetPrice" as const, label: "Require Target Price", desc: "Reject signals without a target price" },
+          ] as const).map(({ key, label, desc }) => (
             <ToggleRow
               key={key}
               label={label}
@@ -314,24 +288,62 @@ export function Settings() {
             {rulesSaved ? "✓ Saved" : updateRules.isPending ? "Saving…" : "Save Rules"}
           </button>
           {localRules && (
-            <button
-              onClick={() => setLocalRules(null)}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
+            <button onClick={() => setLocalRules(null)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
               Reset changes
             </button>
           )}
         </div>
       </motion.section>
 
-      {/* Webhook reference */}
       <div className="border-t border-border" />
-      <motion.section
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="space-y-3"
-      >
+
+      {/* ─── IG Group Integration ─────────────────────────────────────── */}
+      <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Link2 className="w-4 h-4 text-primary" />
+          <h2 className="text-base font-semibold text-foreground">IG Group Integration</h2>
+          <span className="text-[10px] font-mono bg-amber-500/15 text-amber-400 border border-amber-500/25 px-1.5 py-0.5 rounded">Optional</span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Set environment variables in your deployment to fetch live prices from IG Group's REST API.
+          Without these, the platform uses deterministic simulation data.
+        </p>
+
+        <div className="bg-card border border-border rounded-xl divide-y divide-border">
+          {[
+            { name: "IG_API_KEY", desc: "Your IG REST API key (Account → API Access)", type: "string" },
+            { name: "IG_USERNAME", desc: "IG Group username / client ID", type: "string" },
+            { name: "IG_PASSWORD", desc: "IG Group password", type: "password" },
+            { name: "IG_ACCOUNT_TYPE", desc: 'Account type: "live" or "demo" (default: demo)', type: "string", default: "demo" },
+          ].map((v, i) => (
+            <div key={v.name} className={cn("px-4 py-3 flex items-start gap-4", i % 2 === 0 ? "" : "bg-muted/5")}>
+              <div className="flex-1 min-w-0">
+                <code className="text-[11px] font-mono text-primary">{v.name}</code>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{v.desc}</p>
+              </div>
+              {v.default && (
+                <span className="text-[10px] font-mono text-muted-foreground mt-0.5 shrink-0">default: {v.default}</span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 px-4 py-3">
+          <div className="flex items-start gap-2">
+            <Gem className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              When configured, <span className="text-foreground font-medium">Market Explorer</span> and{" "}
+              <span className="text-foreground font-medium">Asset Detail</span> pages will show real bid/ask spreads,
+              daily H/L, and live market status from IG Group instead of simulated data.
+            </p>
+          </div>
+        </div>
+      </motion.section>
+
+      <div className="border-t border-border" />
+
+      {/* ─── Webhook Reference ─────────────────────────────────────────── */}
+      <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-3">
         <h2 className="text-base font-semibold text-foreground">Webhook Reference</h2>
         <p className="text-xs text-muted-foreground">
           TradingView alert message format — paste this as your alert JSON:
@@ -351,35 +363,38 @@ X-API-Key: <your-key>
   "message": "{{strategy.order.comment}}"
 }`}
         </pre>
+        <p className="text-[11px] text-muted-foreground">
+          Supported asset classes: <span className="text-foreground">Stocks, Indices, Forex, Commodities</span>.
+          Asset class is inferred from ticker format automatically.
+        </p>
       </motion.section>
     </div>
   );
 }
 
 function ToggleRow({
-  label,
-  desc,
-  checked,
-  onChange,
+  label, desc, badge, checked, onChange,
 }: {
-  label: string;
-  desc: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
+  label: string; desc: string; badge?: string; checked: boolean; onChange: (v: boolean) => void;
 }) {
   return (
     <div className="px-4 py-4 flex items-center justify-between gap-6">
       <div>
-        <p className="text-sm font-medium text-foreground">{label}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          {badge && (
+            <span className="text-[9px] font-mono bg-primary/15 text-primary border border-primary/25 px-1.5 py-0.5 rounded uppercase">
+              {badge}
+            </span>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
       </div>
       <button
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative flex-shrink-0 w-10 h-5.5 rounded-full transition-colors border",
-          checked
-            ? "bg-primary/20 border-primary/40"
-            : "bg-muted/50 border-border"
+          "relative flex-shrink-0 w-10 rounded-full transition-colors border",
+          checked ? "bg-primary/20 border-primary/40" : "bg-muted/50 border-border"
         )}
         style={{ height: "22px" }}
       >

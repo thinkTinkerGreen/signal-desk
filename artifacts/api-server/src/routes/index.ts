@@ -8,6 +8,7 @@ import keysRouter from "./keys";
 import ingestionRulesRouter from "./ingestionRules";
 import ingestionLogRouter from "./ingestionLog";
 import webhooksRouter from "./webhooks";
+import marketRouter from "./market";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(keysRouter);
 router.use(ingestionRulesRouter);
 router.use(ingestionLogRouter);
 router.use(webhooksRouter);
+router.use(marketRouter);
 
 export default router;

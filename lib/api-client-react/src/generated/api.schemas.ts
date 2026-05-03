@@ -16,6 +16,7 @@ export const SignalAssetClass = {
   stocks: "stocks",
   indices: "indices",
   forex: "forex",
+  commodities: "commodities",
 } as const;
 
 export type SignalSignalType =
@@ -50,6 +51,7 @@ export const NewSignalAssetClass = {
   stocks: "stocks",
   indices: "indices",
   forex: "forex",
+  commodities: "commodities",
 } as const;
 
 export type NewSignalSignalType =
@@ -79,6 +81,7 @@ export type SignalSummaryByAssetClass = {
   stocks: number;
   indices: number;
   forex: number;
+  commodities: number;
 };
 
 export interface SignalSummary {
@@ -115,6 +118,7 @@ export const PositionAssetClass = {
   stocks: "stocks",
   indices: "indices",
   forex: "forex",
+  commodities: "commodities",
 } as const;
 
 export type PositionDirection =
@@ -148,6 +152,7 @@ export const NewPositionAssetClass = {
   stocks: "stocks",
   indices: "indices",
   forex: "forex",
+  commodities: "commodities",
 } as const;
 
 export type NewPositionDirection =
@@ -176,6 +181,7 @@ export const AssetAssetClass = {
   stocks: "stocks",
   indices: "indices",
   forex: "forex",
+  commodities: "commodities",
 } as const;
 
 export interface Asset {
@@ -269,6 +275,83 @@ export interface TradingViewPayload {
   timeframe?: string;
 }
 
+export type LivePriceSource =
+  (typeof LivePriceSource)[keyof typeof LivePriceSource];
+
+export const LivePriceSource = {
+  ig: "ig",
+  mock: "mock",
+} as const;
+
+export interface LivePrice {
+  symbol: string;
+  bid?: number | null;
+  ask?: number | null;
+  mid?: number | null;
+  change: number;
+  changePercent: number;
+  high?: number | null;
+  low?: number | null;
+  status: string;
+  timestamp: string;
+  source: LivePriceSource;
+}
+
+export interface BatchPriceRequest {
+  /**
+   * @minItems 1
+   * @maxItems 50
+   */
+  symbols: string[];
+}
+
+export type NewsItemSentiment =
+  (typeof NewsItemSentiment)[keyof typeof NewsItemSentiment];
+
+export const NewsItemSentiment = {
+  positive: "positive",
+  negative: "negative",
+  neutral: "neutral",
+} as const;
+
+export interface NewsItem {
+  headline: string;
+  summary: string;
+  source: string;
+  sentiment: NewsItemSentiment;
+  isBreaking: boolean;
+  publishedAt: string;
+  url: string;
+  tags?: string;
+}
+
+export interface MarketAssetInfo {
+  symbol: string;
+  name: string;
+}
+
+export interface MarketAssets {
+  stocks: MarketAssetInfo[];
+  indices: MarketAssetInfo[];
+  forex: MarketAssetInfo[];
+  commodities: MarketAssetInfo[];
+}
+
+export type MarketStatusPriceSource =
+  (typeof MarketStatusPriceSource)[keyof typeof MarketStatusPriceSource];
+
+export const MarketStatusPriceSource = {
+  ig: "ig",
+  mock: "mock",
+} as const;
+
+export interface MarketStatus {
+  igConfigured: boolean;
+  priceSource: MarketStatusPriceSource;
+  newsSource: string;
+  timestamp: string;
+}
+
 export type GetSignalsParams = {
   asset_class?: GetSignalsAssetClass;
   signal_type?: GetSignalsSignalType;
@@ -281,6 +364,7 @@ export const GetSignalsAssetClass = {
   stocks: "stocks",
   indices: "indices",
   forex: "forex",
+  commodities: "commodities",
   all: "all",
 } as const;
 
@@ -307,3 +391,7 @@ export const GetIngestionLogStatus = {
   accepted: "accepted",
   rejected: "rejected",
 } as const;
+
+export type GetMarketNewsParams = {
+  count?: number;
+};

@@ -13,5 +13,6 @@ export const GetSignalsAssetClass = {
   stocks: "stocks",
   indices: "indices",
   forex: "forex",
+  commodities: "commodities",
   all: "all",
 } as const;

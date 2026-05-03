@@ -24,6 +24,8 @@ tags:
     description: Signal ingestion rules and log
   - name: webhooks
     description: Webhook endpoints
+  - name: market
+    description: Live market prices, news and asset lists
 
 paths:
   /healthz:
@@ -49,7 +51,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [stocks, indices, forex, all]
+            enum: [stocks, indices, forex, commodities, all]
           required: false
         - name: signal_type
           in: query
@@ -350,6 +352,101 @@ paths:
         "422":
           description: Validation rules rejected the signal
 
+  /market/prices/{symbol}:
+    get:
+      operationId: getMarketPrice
+      tags: [market]
+      summary: Get live price for a single symbol
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Live price data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LivePrice"
+
+  /market/prices:
+    post:
+      operationId: getBatchPrices
+      tags: [market]
+      summary: Get live prices for multiple symbols (batch)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchPriceRequest"
+      responses:
+        "200":
+          description: Array of live price data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LivePrice"
+        "400":
+          description: Invalid request
+
+  /market/news/{symbol}:
+    get:
+      operationId: getMarketNews
+      tags: [market]
+      summary: Get news items for a symbol
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: count
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 5
+      responses:
+        "200":
+          description: Array of news items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NewsItem"
+
+  /market/assets:
+    get:
+      operationId: getMarketAssets
+      tags: [market]
+      summary: Get all tracked assets grouped by asset class
+      responses:
+        "200":
+          description: Asset lists by class
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketAssets"
+
+  /market/status:
+    get:
+      operationId: getMarketStatus
+      tags: [market]
+      summary: Get market data source status
+      responses:
+        "200":
+          description: Market status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketStatus"
+
 components:
   schemas:
     HealthStatus:
@@ -371,7 +468,7 @@ components:
           type: string
         assetClass:
           type: string
-          enum: [stocks, indices, forex]
+          enum: [stocks, indices, forex, commodities]
         signalType:
           type: string
           enum: [buy, sell, hold]
@@ -416,7 +513,7 @@ components:
           type: string
         assetClass:
           type: string
-          enum: [stocks, indices, forex]
+          enum: [stocks, indices, forex, commodities]
         signalType:
           type: string
           enum: [buy, sell, hold]
@@ -467,10 +564,13 @@ components:
               type: integer
             forex:
               type: integer
+            commodities:
+              type: integer
           required:
             - stocks
             - indices
             - forex
+            - commodities
         avgConfidence:
           type: number
       required:
@@ -538,7 +638,7 @@ components:
           type: string
         assetClass:
           type: string
-          enum: [stocks, indices, forex]
+          enum: [stocks, indices, forex, commodities]
         direction:
           type: string
           enum: [long, short]
@@ -583,7 +683,7 @@ components:
           type: string
         assetClass:
           type: string
-          enum: [stocks, indices, forex]
+          enum: [stocks, indices, forex, commodities]
         direction:
           type: string
           enum: [long, short]
@@ -616,7 +716,7 @@ components:
           type: string
         assetClass:
           type: string
-          enum: [stocks, indices, forex]
+          enum: [stocks, indices, forex, commodities]
         currentPrice:
           type: number
         change:
@@ -812,3 +912,139 @@ components:
         - ticker
         - action
         - price
+
+    LivePrice:
+      type: object
+      properties:
+        symbol:
+          type: string
+        bid:
+          type: number
+          nullable: true
+        ask:
+          type: number
+          nullable: true
+        mid:
+          type: number
+          nullable: true
+        change:
+          type: number
+        changePercent:
+          type: number
+        high:
+          type: number
+          nullable: true
+        low:
+          type: number
+          nullable: true
+        status:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        source:
+          type: string
+          enum: [ig, mock]
+      required:
+        - symbol
+        - change
+        - changePercent
+        - status
+        - timestamp
+        - source
+
+    BatchPriceRequest:
+      type: object
+      properties:
+        symbols:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 50
+      required:
+        - symbols
+
+    NewsItem:
+      type: object
+      properties:
+        headline:
+          type: string
+        summary:
+          type: string
+        source:
+          type: string
+        sentiment:
+          type: string
+          enum: [positive, negative, neutral]
+        isBreaking:
+          type: boolean
+        publishedAt:
+          type: string
+        url:
+          type: string
+        tags:
+          type: string
+      required:
+        - headline
+        - summary
+        - source
+        - sentiment
+        - isBreaking
+        - publishedAt
+        - url
+
+    MarketAssetInfo:
+      type: object
+      properties:
+        symbol:
+          type: string
+        name:
+          type: string
+      required:
+        - symbol
+        - name
+
+    MarketAssets:
+      type: object
+      properties:
+        stocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketAssetInfo"
+        indices:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketAssetInfo"
+        forex:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketAssetInfo"
+        commodities:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketAssetInfo"
+      required:
+        - stocks
+        - indices
+        - forex
+        - commodities
+
+    MarketStatus:
+      type: object
+      properties:
+        igConfigured:
+          type: boolean
+        priceSource:
+          type: string
+          enum: [ig, mock]
+        newsSource:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - igConfigured
+        - priceSource
+        - newsSource
+        - timestamp

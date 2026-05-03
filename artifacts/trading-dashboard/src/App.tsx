@@ -4,6 +4,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/Layout";
 import { Dashboard } from "@/pages/Dashboard";
+import { Market } from "@/pages/Market";
+import { AssetDetail } from "@/pages/AssetDetail";
 import { Signals } from "@/pages/Signals";
 import { Portfolio } from "@/pages/Portfolio";
 import { Positions } from "@/pages/Positions";
@@ -26,6 +28,8 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={Dashboard} />
+        <Route path="/market/:symbol" component={AssetDetail} />
+        <Route path="/market" component={Market} />
         <Route path="/signals" component={Signals} />
         <Route path="/portfolio" component={Portfolio} />
         <Route path="/positions" component={Positions} />

@@ -18,7 +18,9 @@ export const HealthCheckResponse = zod.object({
  * @summary Get all trading signals
  */
 export const GetSignalsQueryParams = zod.object({
-  asset_class: zod.enum(["stocks", "indices", "forex", "all"]).optional(),
+  asset_class: zod
+    .enum(["stocks", "indices", "forex", "commodities", "all"])
+    .optional(),
   signal_type: zod.enum(["buy", "sell", "hold", "all"]).optional(),
 });
 
@@ -26,7 +28,7 @@ export const GetSignalsResponseItem = zod.object({
   id: zod.number(),
   symbol: zod.string(),
   name: zod.string(),
-  assetClass: zod.enum(["stocks", "indices", "forex"]),
+  assetClass: zod.enum(["stocks", "indices", "forex", "commodities"]),
   signalType: zod.enum(["buy", "sell", "hold"]),
   confidence: zod.number(),
   currentPrice: zod.number(),
@@ -45,7 +47,7 @@ export const GetSignalsResponse = zod.array(GetSignalsResponseItem);
 export const CreateSignalBody = zod.object({
   symbol: zod.string(),
   name: zod.string(),
-  assetClass: zod.enum(["stocks", "indices", "forex"]),
+  assetClass: zod.enum(["stocks", "indices", "forex", "commodities"]),
   signalType: zod.enum(["buy", "sell", "hold"]),
   confidence: zod.number(),
   currentPrice: zod.number(),
@@ -67,7 +69,7 @@ export const GetSignalResponse = zod.object({
   id: zod.number(),
   symbol: zod.string(),
   name: zod.string(),
-  assetClass: zod.enum(["stocks", "indices", "forex"]),
+  assetClass: zod.enum(["stocks", "indices", "forex", "commodities"]),
   signalType: zod.enum(["buy", "sell", "hold"]),
   confidence: zod.number(),
   currentPrice: zod.number(),
@@ -98,6 +100,7 @@ export const GetSignalSummaryResponse = zod.object({
     stocks: zod.number(),
     indices: zod.number(),
     forex: zod.number(),
+    commodities: zod.number(),
   }),
   avgConfidence: zod.number(),
 });
@@ -136,7 +139,7 @@ export const GetPositionsResponseItem = zod.object({
   id: zod.number(),
   symbol: zod.string(),
   name: zod.string(),
-  assetClass: zod.enum(["stocks", "indices", "forex"]),
+  assetClass: zod.enum(["stocks", "indices", "forex", "commodities"]),
   direction: zod.enum(["long", "short"]),
   quantity: zod.number(),
   entryPrice: zod.number(),
@@ -155,7 +158,7 @@ export const GetPositionsResponse = zod.array(GetPositionsResponseItem);
 export const CreatePositionBody = zod.object({
   symbol: zod.string(),
   name: zod.string(),
-  assetClass: zod.enum(["stocks", "indices", "forex"]),
+  assetClass: zod.enum(["stocks", "indices", "forex", "commodities"]),
   direction: zod.enum(["long", "short"]),
   quantity: zod.number(),
   entryPrice: zod.number(),
@@ -177,7 +180,7 @@ export const GetAssetsResponseItem = zod.object({
   id: zod.number(),
   symbol: zod.string(),
   name: zod.string(),
-  assetClass: zod.enum(["stocks", "indices", "forex"]),
+  assetClass: zod.enum(["stocks", "indices", "forex", "commodities"]),
   currentPrice: zod.number(),
   change: zod.number(),
   changePercent: zod.number(),
@@ -289,4 +292,114 @@ export const TradingViewWebhookBody = zod.object({
   stop: zod.number().optional(),
   message: zod.string().optional(),
   timeframe: zod.string().optional(),
+});
+
+/**
+ * @summary Get live price for a single symbol
+ */
+export const GetMarketPriceParams = zod.object({
+  symbol: zod.coerce.string(),
+});
+
+export const GetMarketPriceResponse = zod.object({
+  symbol: zod.string(),
+  bid: zod.number().nullish(),
+  ask: zod.number().nullish(),
+  mid: zod.number().nullish(),
+  change: zod.number(),
+  changePercent: zod.number(),
+  high: zod.number().nullish(),
+  low: zod.number().nullish(),
+  status: zod.string(),
+  timestamp: zod.coerce.date(),
+  source: zod.enum(["ig", "mock"]),
+});
+
+/**
+ * @summary Get live prices for multiple symbols (batch)
+ */
+export const getBatchPricesBodySymbolsMax = 50;
+
+export const GetBatchPricesBody = zod.object({
+  symbols: zod.array(zod.string()).min(1).max(getBatchPricesBodySymbolsMax),
+});
+
+export const GetBatchPricesResponseItem = zod.object({
+  symbol: zod.string(),
+  bid: zod.number().nullish(),
+  ask: zod.number().nullish(),
+  mid: zod.number().nullish(),
+  change: zod.number(),
+  changePercent: zod.number(),
+  high: zod.number().nullish(),
+  low: zod.number().nullish(),
+  status: zod.string(),
+  timestamp: zod.coerce.date(),
+  source: zod.enum(["ig", "mock"]),
+});
+export const GetBatchPricesResponse = zod.array(GetBatchPricesResponseItem);
+
+/**
+ * @summary Get news items for a symbol
+ */
+export const GetMarketNewsParams = zod.object({
+  symbol: zod.coerce.string(),
+});
+
+export const getMarketNewsQueryCountDefault = 5;
+
+export const GetMarketNewsQueryParams = zod.object({
+  count: zod.coerce.number().default(getMarketNewsQueryCountDefault),
+});
+
+export const GetMarketNewsResponseItem = zod.object({
+  headline: zod.string(),
+  summary: zod.string(),
+  source: zod.string(),
+  sentiment: zod.enum(["positive", "negative", "neutral"]),
+  isBreaking: zod.boolean(),
+  publishedAt: zod.string(),
+  url: zod.string(),
+  tags: zod.string().optional(),
+});
+export const GetMarketNewsResponse = zod.array(GetMarketNewsResponseItem);
+
+/**
+ * @summary Get all tracked assets grouped by asset class
+ */
+export const GetMarketAssetsResponse = zod.object({
+  stocks: zod.array(
+    zod.object({
+      symbol: zod.string(),
+      name: zod.string(),
+    }),
+  ),
+  indices: zod.array(
+    zod.object({
+      symbol: zod.string(),
+      name: zod.string(),
+    }),
+  ),
+  forex: zod.array(
+    zod.object({
+      symbol: zod.string(),
+      name: zod.string(),
+    }),
+  ),
+  commodities: zod.array(
+    zod.object({
+      symbol: zod.string(),
+      name: zod.string(),
+    }),
+  ),
+});
+
+/**
+ * @summary Get market data source status
+ */
+export const GetMarketStatusResponse = zod.object({
+  igConfigured: zod.boolean(),
+  priceSource: zod.enum(["ig", "mock"]),
+  newsSource: zod.string(),
+  timestamp: zod.coerce.date(),
 });

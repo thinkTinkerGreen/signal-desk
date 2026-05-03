@@ -10,4 +10,5 @@ export type SignalSummaryByAssetClass = {
   stocks: number;
   indices: number;
   forex: number;
+  commodities: number;
 };

@@ -8,6 +8,7 @@ export const ingestionRulesTable = pgTable("ingestion_rules", {
   allowStocks: boolean("allow_stocks").notNull().default(true),
   allowIndices: boolean("allow_indices").notNull().default(true),
   allowForex: boolean("allow_forex").notNull().default(true),
+  allowCommodities: boolean("allow_commodities").notNull().default(true),
   requireReasoning: boolean("require_reasoning").notNull().default(false),
   requireStopLoss: boolean("require_stop_loss").notNull().default(false),
   requireTargetPrice: boolean("require_target_price").notNull().default(false),

@@ -83,12 +83,15 @@ router.post("/webhooks/tradingview", requireApiKey, async (req, res) => {
   });
 });
 
-function inferAssetClass(ticker: string): "stocks" | "indices" | "forex" {
+function inferAssetClass(ticker: string): "stocks" | "indices" | "forex" | "commodities" {
   const upper = ticker.toUpperCase();
-  // Forex pairs: 6 chars, both parts are currencies
+  // Commodities: precious metals, energy, agricultural
+  if (/^(XAUUSD|XAGUSD|GOLD|SILVER|OIL|CL|NG|GC|SI|COPPER|HG|BRENT|WTI|USOIL|BRENTOIL|NATGAS|WEAT|CORN|SOYB|COCOA|COFFEE|SUGAR|COTTON)/.test(upper))
+    return "commodities";
+  // Forex pairs: 6 alpha chars (e.g. EURUSD) or contains slash
   if (/^[A-Z]{6}$/.test(upper) || upper.includes("/")) return "forex";
   // Common indices
-  if (["SPX", "NDX", "DJI", "FTSE", "DAX", "NKY", "US500", "US100", "UK100", "GER40"].includes(upper))
+  if (["SPX", "NDX", "DJI", "FTSE", "DAX", "NKY", "US500", "US100", "UK100", "GER40", "CAC", "IBEX", "SMI", "ASX200"].includes(upper))
     return "indices";
   return "stocks";
 }

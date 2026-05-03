@@ -20,14 +20,20 @@ import type {
   ApiKey,
   ApiKeyCreated,
   Asset,
+  BatchPriceRequest,
   CreateApiKeyBody,
   GetIngestionLogParams,
+  GetMarketNewsParams,
   GetSignalsParams,
   HealthStatus,
   IngestionLogEntry,
   IngestionRules,
+  LivePrice,
+  MarketAssets,
+  MarketStatus,
   NewPosition,
   NewSignal,
+  NewsItem,
   Portfolio,
   PortfolioDataPoint,
   Position,
@@ -1589,3 +1595,435 @@ export const useTradingViewWebhook = <
 > => {
   return useMutation(getTradingViewWebhookMutationOptions(options));
 };
+
+/**
+ * @summary Get live price for a single symbol
+ */
+export const getGetMarketPriceUrl = (symbol: string) => {
+  return `/api/market/prices/${symbol}`;
+};
+
+export const getMarketPrice = async (
+  symbol: string,
+  options?: RequestInit,
+): Promise<LivePrice> => {
+  return customFetch<LivePrice>(getGetMarketPriceUrl(symbol), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMarketPriceQueryKey = (symbol: string) => {
+  return [`/api/market/prices/${symbol}`] as const;
+};
+
+export const getGetMarketPriceQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMarketPrice>>,
+  TError = ErrorType<unknown>,
+>(
+  symbol: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMarketPrice>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMarketPriceQueryKey(symbol);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMarketPrice>>> = ({
+    signal,
+  }) => getMarketPrice(symbol, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!symbol,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMarketPrice>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMarketPriceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMarketPrice>>
+>;
+export type GetMarketPriceQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get live price for a single symbol
+ */
+
+export function useGetMarketPrice<
+  TData = Awaited<ReturnType<typeof getMarketPrice>>,
+  TError = ErrorType<unknown>,
+>(
+  symbol: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMarketPrice>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMarketPriceQueryOptions(symbol, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get live prices for multiple symbols (batch)
+ */
+export const getGetBatchPricesUrl = () => {
+  return `/api/market/prices`;
+};
+
+export const getBatchPrices = async (
+  batchPriceRequest: BatchPriceRequest,
+  options?: RequestInit,
+): Promise<LivePrice[]> => {
+  return customFetch<LivePrice[]>(getGetBatchPricesUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(batchPriceRequest),
+  });
+};
+
+export const getGetBatchPricesMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof getBatchPrices>>,
+    TError,
+    { data: BodyType<BatchPriceRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof getBatchPrices>>,
+  TError,
+  { data: BodyType<BatchPriceRequest> },
+  TContext
+> => {
+  const mutationKey = ["getBatchPrices"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof getBatchPrices>>,
+    { data: BodyType<BatchPriceRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return getBatchPrices(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GetBatchPricesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof getBatchPrices>>
+>;
+export type GetBatchPricesMutationBody = BodyType<BatchPriceRequest>;
+export type GetBatchPricesMutationError = ErrorType<void>;
+
+/**
+ * @summary Get live prices for multiple symbols (batch)
+ */
+export const useGetBatchPrices = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof getBatchPrices>>,
+    TError,
+    { data: BodyType<BatchPriceRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof getBatchPrices>>,
+  TError,
+  { data: BodyType<BatchPriceRequest> },
+  TContext
+> => {
+  return useMutation(getGetBatchPricesMutationOptions(options));
+};
+
+/**
+ * @summary Get news items for a symbol
+ */
+export const getGetMarketNewsUrl = (
+  symbol: string,
+  params?: GetMarketNewsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/market/news/${symbol}?${stringifiedParams}`
+    : `/api/market/news/${symbol}`;
+};
+
+export const getMarketNews = async (
+  symbol: string,
+  params?: GetMarketNewsParams,
+  options?: RequestInit,
+): Promise<NewsItem[]> => {
+  return customFetch<NewsItem[]>(getGetMarketNewsUrl(symbol, params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMarketNewsQueryKey = (
+  symbol: string,
+  params?: GetMarketNewsParams,
+) => {
+  return [`/api/market/news/${symbol}`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetMarketNewsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMarketNews>>,
+  TError = ErrorType<unknown>,
+>(
+  symbol: string,
+  params?: GetMarketNewsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMarketNews>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetMarketNewsQueryKey(symbol, params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMarketNews>>> = ({
+    signal,
+  }) => getMarketNews(symbol, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!symbol,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMarketNews>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMarketNewsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMarketNews>>
+>;
+export type GetMarketNewsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get news items for a symbol
+ */
+
+export function useGetMarketNews<
+  TData = Awaited<ReturnType<typeof getMarketNews>>,
+  TError = ErrorType<unknown>,
+>(
+  symbol: string,
+  params?: GetMarketNewsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMarketNews>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMarketNewsQueryOptions(symbol, params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get all tracked assets grouped by asset class
+ */
+export const getGetMarketAssetsUrl = () => {
+  return `/api/market/assets`;
+};
+
+export const getMarketAssets = async (
+  options?: RequestInit,
+): Promise<MarketAssets> => {
+  return customFetch<MarketAssets>(getGetMarketAssetsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMarketAssetsQueryKey = () => {
+  return [`/api/market/assets`] as const;
+};
+
+export const getGetMarketAssetsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMarketAssets>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMarketAssets>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMarketAssetsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMarketAssets>>> = ({
+    signal,
+  }) => getMarketAssets({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMarketAssets>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMarketAssetsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMarketAssets>>
+>;
+export type GetMarketAssetsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get all tracked assets grouped by asset class
+ */
+
+export function useGetMarketAssets<
+  TData = Awaited<ReturnType<typeof getMarketAssets>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMarketAssets>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMarketAssetsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get market data source status
+ */
+export const getGetMarketStatusUrl = () => {
+  return `/api/market/status`;
+};
+
+export const getMarketStatus = async (
+  options?: RequestInit,
+): Promise<MarketStatus> => {
+  return customFetch<MarketStatus>(getGetMarketStatusUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMarketStatusQueryKey = () => {
+  return [`/api/market/status`] as const;
+};
+
+export const getGetMarketStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMarketStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMarketStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMarketStatusQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMarketStatus>>> = ({
+    signal,
+  }) => getMarketStatus({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMarketStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMarketStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMarketStatus>>
+>;
+export type GetMarketStatusQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get market data source status
+ */
+
+export function useGetMarketStatus<
+  TData = Awaited<ReturnType<typeof getMarketStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMarketStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMarketStatusQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@workspace/tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@workspace/db": "workspace:*",
+    "drizzle-orm": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "vitest": "^3.2.3"
+  }
+}

@@ -55,6 +55,7 @@ export async function validateAndLog(
     stocks: rule.allowStocks,
     indices: rule.allowIndices,
     forex: rule.allowForex,
+    commodities: rule.allowCommodities ?? true,
   };
   if (!assetClassMap[payload.assetClass]) {
     const reason = `Asset class '${payload.assetClass}' is not allowed`;

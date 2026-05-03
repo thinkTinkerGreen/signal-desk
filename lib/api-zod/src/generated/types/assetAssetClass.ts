@@ -13,4 +13,5 @@ export const AssetAssetClass = {
   stocks: "stocks",
   indices: "indices",
   forex: "forex",
+  commodities: "commodities",
 } as const;

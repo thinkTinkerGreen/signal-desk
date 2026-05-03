@@ -1,0 +1,33 @@
+# Copy this file to terraform.tfvars and fill in your values.
+# Never commit terraform.tfvars to source control.
+
+# Cloud provider: aws | gcp | azure
+cloud = "aws"
+
+# App
+project_name = "signaldesk"
+environment  = "prod"
+
+# Docker images (build and push these first)
+api_image = "ghcr.io/thinkTinkerGreen/signal-desk/api:latest"
+web_image = "ghcr.io/thinkTinkerGreen/signal-desk/web:latest"
+
+# Database
+db_name     = "signaldesk"
+db_user     = "signaldesk"
+db_password = "CHANGE_ME_STRONG_PASSWORD"
+
+# App secrets
+session_secret = "CHANGE_ME_RANDOM_64_CHARS"
+
+# AWS (if cloud = "aws")
+aws_region  = "us-east-1"
+aws_vpc_cidr = "10.0.0.0/16"
+
+# GCP (if cloud = "gcp")
+# gcp_project = "my-gcp-project-id"
+# gcp_region  = "us-central1"
+
+# Azure (if cloud = "azure")
+# azure_location        = "East US"
+# azure_subscription_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
