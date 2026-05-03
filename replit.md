@@ -26,6 +26,28 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
 
+## GitHub
+
+- **Repository**: https://github.com/thinkTinkerGreen/signal-desk
+- **GitHub user**: thinkTinkerGreen
+- **Token**: stored as `GITHUB_TOKEN` secret
+- **Push command**: `git push "https://thinkTinkerGreen:$GITHUB_TOKEN@github.com/thinkTinkerGreen/signal-desk.git" main`
+- **Note**: `git config` writes are blocked in main agent — use the push URL with token embedded instead
+
+## Iterations
+
+### Iteration 1 — `tag: iteration-1` (current)
+- Full trading signal dashboard (Stocks, Indices, Forex)
+- 5 pages: Dashboard, Signals, Portfolio, Positions, Watchlist
+- Mock signal data seeded in DB
+- Basic POST endpoint to accept signals from external agents
+
+### Iteration 2 — Planned
+- API key authentication for signal ingestion (protect POST /api/signals)
+- TradingView-compatible webhook endpoint (/api/webhooks/tradingview)
+- Configurable validation rules UI on the dashboard (min confidence threshold, allowed asset classes, required fields)
+- Signal ingestion log / audit trail
+
 ## Artifacts
 
 ### Trading Signal Dashboard (`artifacts/trading-dashboard`)
@@ -47,7 +69,10 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 
 ## Signal Integration
 
-Signals are currently seeded with mock data. The `/api/signals` POST endpoint accepts new signals from external agents/LLMs:
+The `/api/signals` POST endpoint accepts new signals from external agents/LLMs.
+In Iteration 2 this will require an API key header: `X-API-Key: <key>`
+
+**Payload format:**
 ```json
 {
   "symbol": "AAPL",
