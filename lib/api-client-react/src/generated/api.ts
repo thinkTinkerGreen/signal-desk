@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Trading Signal Dashboard API
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
@@ -17,9 +17,15 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  ApiKey,
+  ApiKeyCreated,
   Asset,
+  CreateApiKeyBody,
+  GetIngestionLogParams,
   GetSignalsParams,
   HealthStatus,
+  IngestionLogEntry,
+  IngestionRules,
   NewPosition,
   NewSignal,
   Portfolio,
@@ -27,6 +33,8 @@ import type {
   Position,
   Signal,
   SignalSummary,
+  TradingViewPayload,
+  UpdateIngestionRulesBody,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -208,7 +216,7 @@ export function useGetSignals<
 }
 
 /**
- * @summary Create a new trading signal
+ * @summary Create a new trading signal (requires X-API-Key header)
  */
 export const getCreateSignalUrl = () => {
   return `/api/signals`;
@@ -227,7 +235,7 @@ export const createSignal = async (
 };
 
 export const getCreateSignalMutationOptions = <
-  TError = ErrorType<unknown>,
+  TError = ErrorType<void>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -268,13 +276,13 @@ export type CreateSignalMutationResult = NonNullable<
   Awaited<ReturnType<typeof createSignal>>
 >;
 export type CreateSignalMutationBody = BodyType<NewSignal>;
-export type CreateSignalMutationError = ErrorType<unknown>;
+export type CreateSignalMutationError = ErrorType<void>;
 
 /**
- * @summary Create a new trading signal
+ * @summary Create a new trading signal (requires X-API-Key header)
  */
 export const useCreateSignal = <
-  TError = ErrorType<unknown>,
+  TError = ErrorType<void>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -996,3 +1004,588 @@ export function useGetAssets<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List all API keys (values are masked)
+ */
+export const getGetApiKeysUrl = () => {
+  return `/api/keys`;
+};
+
+export const getApiKeys = async (options?: RequestInit): Promise<ApiKey[]> => {
+  return customFetch<ApiKey[]>(getGetApiKeysUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetApiKeysQueryKey = () => {
+  return [`/api/keys`] as const;
+};
+
+export const getGetApiKeysQueryOptions = <
+  TData = Awaited<ReturnType<typeof getApiKeys>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getApiKeys>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetApiKeysQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiKeys>>> = ({
+    signal,
+  }) => getApiKeys({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getApiKeys>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetApiKeysQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getApiKeys>>
+>;
+export type GetApiKeysQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all API keys (values are masked)
+ */
+
+export function useGetApiKeys<
+  TData = Awaited<ReturnType<typeof getApiKeys>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getApiKeys>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetApiKeysQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a new API key
+ */
+export const getCreateApiKeyUrl = () => {
+  return `/api/keys`;
+};
+
+export const createApiKey = async (
+  createApiKeyBody: CreateApiKeyBody,
+  options?: RequestInit,
+): Promise<ApiKeyCreated> => {
+  return customFetch<ApiKeyCreated>(getCreateApiKeyUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createApiKeyBody),
+  });
+};
+
+export const getCreateApiKeyMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createApiKey>>,
+    TError,
+    { data: BodyType<CreateApiKeyBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createApiKey>>,
+  TError,
+  { data: BodyType<CreateApiKeyBody> },
+  TContext
+> => {
+  const mutationKey = ["createApiKey"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createApiKey>>,
+    { data: BodyType<CreateApiKeyBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createApiKey(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateApiKeyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createApiKey>>
+>;
+export type CreateApiKeyMutationBody = BodyType<CreateApiKeyBody>;
+export type CreateApiKeyMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a new API key
+ */
+export const useCreateApiKey = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createApiKey>>,
+    TError,
+    { data: BodyType<CreateApiKeyBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createApiKey>>,
+  TError,
+  { data: BodyType<CreateApiKeyBody> },
+  TContext
+> => {
+  return useMutation(getCreateApiKeyMutationOptions(options));
+};
+
+/**
+ * @summary Revoke an API key
+ */
+export const getDeleteApiKeyUrl = (id: number) => {
+  return `/api/keys/${id}`;
+};
+
+export const deleteApiKey = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteApiKeyUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteApiKeyMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteApiKey>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteApiKey>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteApiKey"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteApiKey>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteApiKey(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteApiKeyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteApiKey>>
+>;
+
+export type DeleteApiKeyMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Revoke an API key
+ */
+export const useDeleteApiKey = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteApiKey>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteApiKey>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteApiKeyMutationOptions(options));
+};
+
+/**
+ * @summary Get current signal validation rules
+ */
+export const getGetIngestionRulesUrl = () => {
+  return `/api/ingestion/rules`;
+};
+
+export const getIngestionRules = async (
+  options?: RequestInit,
+): Promise<IngestionRules> => {
+  return customFetch<IngestionRules>(getGetIngestionRulesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetIngestionRulesQueryKey = () => {
+  return [`/api/ingestion/rules`] as const;
+};
+
+export const getGetIngestionRulesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getIngestionRules>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getIngestionRules>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetIngestionRulesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getIngestionRules>>
+  > = ({ signal }) => getIngestionRules({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getIngestionRules>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetIngestionRulesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getIngestionRules>>
+>;
+export type GetIngestionRulesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get current signal validation rules
+ */
+
+export function useGetIngestionRules<
+  TData = Awaited<ReturnType<typeof getIngestionRules>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getIngestionRules>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetIngestionRulesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update signal validation rules
+ */
+export const getUpdateIngestionRulesUrl = () => {
+  return `/api/ingestion/rules`;
+};
+
+export const updateIngestionRules = async (
+  updateIngestionRulesBody: UpdateIngestionRulesBody,
+  options?: RequestInit,
+): Promise<IngestionRules> => {
+  return customFetch<IngestionRules>(getUpdateIngestionRulesUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateIngestionRulesBody),
+  });
+};
+
+export const getUpdateIngestionRulesMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateIngestionRules>>,
+    TError,
+    { data: BodyType<UpdateIngestionRulesBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateIngestionRules>>,
+  TError,
+  { data: BodyType<UpdateIngestionRulesBody> },
+  TContext
+> => {
+  const mutationKey = ["updateIngestionRules"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateIngestionRules>>,
+    { data: BodyType<UpdateIngestionRulesBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return updateIngestionRules(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateIngestionRulesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateIngestionRules>>
+>;
+export type UpdateIngestionRulesMutationBody =
+  BodyType<UpdateIngestionRulesBody>;
+export type UpdateIngestionRulesMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update signal validation rules
+ */
+export const useUpdateIngestionRules = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateIngestionRules>>,
+    TError,
+    { data: BodyType<UpdateIngestionRulesBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateIngestionRules>>,
+  TError,
+  { data: BodyType<UpdateIngestionRulesBody> },
+  TContext
+> => {
+  return useMutation(getUpdateIngestionRulesMutationOptions(options));
+};
+
+/**
+ * @summary Get signal ingestion audit log
+ */
+export const getGetIngestionLogUrl = (params?: GetIngestionLogParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/ingestion/log?${stringifiedParams}`
+    : `/api/ingestion/log`;
+};
+
+export const getIngestionLog = async (
+  params?: GetIngestionLogParams,
+  options?: RequestInit,
+): Promise<IngestionLogEntry[]> => {
+  return customFetch<IngestionLogEntry[]>(getGetIngestionLogUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetIngestionLogQueryKey = (params?: GetIngestionLogParams) => {
+  return [`/api/ingestion/log`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetIngestionLogQueryOptions = <
+  TData = Awaited<ReturnType<typeof getIngestionLog>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetIngestionLogParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getIngestionLog>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetIngestionLogQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getIngestionLog>>> = ({
+    signal,
+  }) => getIngestionLog(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getIngestionLog>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetIngestionLogQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getIngestionLog>>
+>;
+export type GetIngestionLogQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get signal ingestion audit log
+ */
+
+export function useGetIngestionLog<
+  TData = Awaited<ReturnType<typeof getIngestionLog>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetIngestionLogParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getIngestionLog>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetIngestionLogQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Receive a TradingView alert and convert to signal
+ */
+export const getTradingViewWebhookUrl = () => {
+  return `/api/webhooks/tradingview`;
+};
+
+export const tradingViewWebhook = async (
+  tradingViewPayload: TradingViewPayload,
+  options?: RequestInit,
+): Promise<Signal> => {
+  return customFetch<Signal>(getTradingViewWebhookUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(tradingViewPayload),
+  });
+};
+
+export const getTradingViewWebhookMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tradingViewWebhook>>,
+    TError,
+    { data: BodyType<TradingViewPayload> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof tradingViewWebhook>>,
+  TError,
+  { data: BodyType<TradingViewPayload> },
+  TContext
+> => {
+  const mutationKey = ["tradingViewWebhook"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof tradingViewWebhook>>,
+    { data: BodyType<TradingViewPayload> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return tradingViewWebhook(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TradingViewWebhookMutationResult = NonNullable<
+  Awaited<ReturnType<typeof tradingViewWebhook>>
+>;
+export type TradingViewWebhookMutationBody = BodyType<TradingViewPayload>;
+export type TradingViewWebhookMutationError = ErrorType<void>;
+
+/**
+ * @summary Receive a TradingView alert and convert to signal
+ */
+export const useTradingViewWebhook = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof tradingViewWebhook>>,
+    TError,
+    { data: BodyType<TradingViewPayload> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof tradingViewWebhook>>,
+  TError,
+  { data: BodyType<TradingViewPayload> },
+  TContext
+> => {
+  return useMutation(getTradingViewWebhookMutationOptions(options));
+};

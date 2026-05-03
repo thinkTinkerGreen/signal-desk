@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Trading Signal Dashboard API
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import type { SignalAssetClass } from "./signalAssetClass";
 import type { SignalSignalType } from "./signalSignalType";
@@ -14,7 +14,6 @@ export interface Signal {
   name: string;
   assetClass: SignalAssetClass;
   signalType: SignalSignalType;
-  /** Confidence percentage 0-100 */
   confidence: number;
   currentPrice: number;
   targetPrice: number;

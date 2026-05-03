@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, Request } from "express";
 import { db, signalsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import {
@@ -7,6 +7,8 @@ import {
   GetSignalParams,
   DeleteSignalParams,
 } from "@workspace/api-zod";
+import { requireApiKey } from "../lib/apiKeyAuth";
+import { validateAndLog } from "../lib/ingestionValidator";
 
 const router = Router();
 
@@ -19,8 +21,10 @@ router.get("/signals", async (req, res) => {
 
   const { asset_class, signal_type } = parsed.data;
 
-  let query = db.select().from(signalsTable).orderBy(desc(signalsTable.generatedAt));
-  const results = await query;
+  const results = await db
+    .select()
+    .from(signalsTable)
+    .orderBy(desc(signalsTable.generatedAt));
 
   const filtered = results.filter((s) => {
     if (asset_class && asset_class !== "all" && s.assetClass !== asset_class) return false;
@@ -47,26 +51,50 @@ router.get("/signals", async (req, res) => {
   );
 });
 
-router.post("/signals", async (req, res) => {
+// POST /signals — requires API key + passes through validation rules
+router.post("/signals", requireApiKey, async (req, res) => {
   const parsed = CreateSignalBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
-  const [signal] = await db.insert(signalsTable).values({
-    symbol: parsed.data.symbol,
-    name: parsed.data.name,
-    assetClass: parsed.data.assetClass,
-    signalType: parsed.data.signalType,
-    confidence: parsed.data.confidence,
-    currentPrice: parsed.data.currentPrice,
-    targetPrice: parsed.data.targetPrice,
-    stopLoss: parsed.data.stopLoss,
-    riskReward: parsed.data.riskReward,
-    timeframe: parsed.data.timeframe,
-    reasoning: parsed.data.reasoning,
-  }).returning();
+  const keyName = (req as Request & { apiKeyName?: string }).apiKeyName;
+  const validation = await validateAndLog(
+    {
+      symbol: parsed.data.symbol,
+      assetClass: parsed.data.assetClass,
+      signalType: parsed.data.signalType,
+      confidence: parsed.data.confidence,
+      reasoning: parsed.data.reasoning,
+      stopLoss: parsed.data.stopLoss,
+      targetPrice: parsed.data.targetPrice,
+    },
+    "agent",
+    keyName
+  );
+
+  if (!validation.accepted) {
+    res.status(422).json({ error: validation.rejectionReason });
+    return;
+  }
+
+  const [signal] = await db
+    .insert(signalsTable)
+    .values({
+      symbol: parsed.data.symbol,
+      name: parsed.data.name,
+      assetClass: parsed.data.assetClass,
+      signalType: parsed.data.signalType,
+      confidence: parsed.data.confidence,
+      currentPrice: parsed.data.currentPrice,
+      targetPrice: parsed.data.targetPrice,
+      stopLoss: parsed.data.stopLoss,
+      riskReward: parsed.data.riskReward,
+      timeframe: parsed.data.timeframe,
+      reasoning: parsed.data.reasoning,
+    })
+    .returning();
 
   res.status(201).json({
     id: signal.id,
@@ -85,7 +113,7 @@ router.post("/signals", async (req, res) => {
   });
 });
 
-router.get("/signals/summary", async (req, res) => {
+router.get("/signals/summary", async (_req, res) => {
   const signals = await db.select().from(signalsTable);
 
   const buy = signals.filter((s) => s.signalType === "buy").length;

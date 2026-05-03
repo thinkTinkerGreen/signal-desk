@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Trading Signal Dashboard API
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 export interface HealthStatus {
   status: string;
@@ -33,7 +33,6 @@ export interface Signal {
   name: string;
   assetClass: SignalAssetClass;
   signalType: SignalSignalType;
-  /** Confidence percentage 0-100 */
   confidence: number;
   currentPrice: number;
   targetPrice: number;
@@ -191,6 +190,85 @@ export interface Asset {
   marketCap: string;
 }
 
+export interface ApiKey {
+  id: number;
+  name: string;
+  /** First 8 chars of key for identification */
+  prefix: string;
+  active: boolean;
+  lastUsedAt?: string | null;
+  createdAt: string;
+}
+
+export interface ApiKeyCreated {
+  id: number;
+  name: string;
+  prefix: string;
+  /** Full API key — only shown once at creation */
+  key: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface CreateApiKeyBody {
+  name: string;
+}
+
+export interface IngestionRules {
+  id: number;
+  /** Minimum confidence % to accept signal (0-100) */
+  minConfidence: number;
+  allowStocks: boolean;
+  allowIndices: boolean;
+  allowForex: boolean;
+  requireReasoning: boolean;
+  requireStopLoss: boolean;
+  requireTargetPrice: boolean;
+  updatedAt: string;
+}
+
+export interface UpdateIngestionRulesBody {
+  minConfidence: number;
+  allowStocks: boolean;
+  allowIndices: boolean;
+  allowForex: boolean;
+  requireReasoning: boolean;
+  requireStopLoss: boolean;
+  requireTargetPrice: boolean;
+}
+
+export type IngestionLogEntrySource =
+  (typeof IngestionLogEntrySource)[keyof typeof IngestionLogEntrySource];
+
+export const IngestionLogEntrySource = {
+  agent: "agent",
+  tradingview: "tradingview",
+  manual: "manual",
+} as const;
+
+export interface IngestionLogEntry {
+  id: number;
+  source: IngestionLogEntrySource;
+  symbol: string;
+  signalType: string;
+  accepted: boolean;
+  rejectionReason?: string | null;
+  keyName?: string | null;
+  createdAt: string;
+}
+
+export interface TradingViewPayload {
+  ticker: string;
+  /** buy, sell, or hold */
+  action: string;
+  price: number;
+  confidence?: number;
+  target?: number;
+  stop?: number;
+  message?: string;
+  timeframe?: string;
+}
+
 export type GetSignalsParams = {
   asset_class?: GetSignalsAssetClass;
   signal_type?: GetSignalsSignalType;
@@ -214,4 +292,18 @@ export const GetSignalsSignalType = {
   sell: "sell",
   hold: "hold",
   all: "all",
+} as const;
+
+export type GetIngestionLogParams = {
+  status?: GetIngestionLogStatus;
+  limit?: number;
+};
+
+export type GetIngestionLogStatus =
+  (typeof GetIngestionLogStatus)[keyof typeof GetIngestionLogStatus];
+
+export const GetIngestionLogStatus = {
+  all: "all",
+  accepted: "accepted",
+  rejected: "rejected",
 } as const;

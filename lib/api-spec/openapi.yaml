@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
+  version: 0.2.0
   description: Trading Signal Dashboard API
 servers:
   - url: /api
@@ -18,6 +18,13 @@ tags:
     description: Open positions
   - name: assets
     description: Watchlist assets
+  - name: keys
+    description: API key management
+  - name: ingestion
+    description: Signal ingestion rules and log
+  - name: webhooks
+    description: Webhook endpoints
+
 paths:
   /healthz:
     get:
@@ -62,7 +69,7 @@ paths:
     post:
       operationId: createSignal
       tags: [signals]
-      summary: Create a new trading signal
+      summary: Create a new trading signal (requires X-API-Key header)
       requestBody:
         required: true
         content:
@@ -76,6 +83,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Signal"
+        "401":
+          description: Missing or invalid API key
+        "422":
+          description: Validation rules rejected the signal
 
   /signals/{id}:
     get:
@@ -212,6 +223,133 @@ paths:
                 items:
                   $ref: "#/components/schemas/Asset"
 
+  /keys:
+    get:
+      operationId: getApiKeys
+      tags: [keys]
+      summary: List all API keys (values are masked)
+      responses:
+        "200":
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiKey"
+    post:
+      operationId: createApiKey
+      tags: [keys]
+      summary: Create a new API key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateApiKeyBody"
+      responses:
+        "201":
+          description: API key created — full key only shown once
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKeyCreated"
+
+  /keys/{id}:
+    delete:
+      operationId: deleteApiKey
+      tags: [keys]
+      summary: Revoke an API key
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Key revoked
+
+  /ingestion/rules:
+    get:
+      operationId: getIngestionRules
+      tags: [ingestion]
+      summary: Get current signal validation rules
+      responses:
+        "200":
+          description: Current rules
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestionRules"
+    put:
+      operationId: updateIngestionRules
+      tags: [ingestion]
+      summary: Update signal validation rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateIngestionRulesBody"
+      responses:
+        "200":
+          description: Updated rules
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestionRules"
+
+  /ingestion/log:
+    get:
+      operationId: getIngestionLog
+      tags: [ingestion]
+      summary: Get signal ingestion audit log
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, accepted, rejected]
+          required: false
+        - name: limit
+          in: query
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: Ingestion log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IngestionLogEntry"
+
+  /webhooks/tradingview:
+    post:
+      operationId: tradingViewWebhook
+      tags: [webhooks]
+      summary: Receive a TradingView alert and convert to signal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TradingViewPayload"
+      responses:
+        "201":
+          description: Signal created from webhook
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Signal"
+        "401":
+          description: Missing or invalid API key
+        "422":
+          description: Validation rules rejected the signal
+
 components:
   schemas:
     HealthStatus:
@@ -239,7 +377,6 @@ components:
           enum: [buy, sell, hold]
         confidence:
           type: number
-          description: Confidence percentage 0-100
         currentPrice:
           type: number
         targetPrice:
@@ -500,3 +637,178 @@ components:
         - changePercent
         - volume
         - marketCap
+
+    ApiKey:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        prefix:
+          type: string
+          description: First 8 chars of key for identification
+        active:
+          type: boolean
+        lastUsedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - prefix
+        - active
+        - createdAt
+
+    ApiKeyCreated:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        prefix:
+          type: string
+        key:
+          type: string
+          description: Full API key — only shown once at creation
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - prefix
+        - key
+        - active
+        - createdAt
+
+    CreateApiKeyBody:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+
+    IngestionRules:
+      type: object
+      properties:
+        id:
+          type: integer
+        minConfidence:
+          type: number
+          description: Minimum confidence % to accept signal (0-100)
+        allowStocks:
+          type: boolean
+        allowIndices:
+          type: boolean
+        allowForex:
+          type: boolean
+        requireReasoning:
+          type: boolean
+        requireStopLoss:
+          type: boolean
+        requireTargetPrice:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - minConfidence
+        - allowStocks
+        - allowIndices
+        - allowForex
+        - requireReasoning
+        - requireStopLoss
+        - requireTargetPrice
+        - updatedAt
+
+    UpdateIngestionRulesBody:
+      type: object
+      properties:
+        minConfidence:
+          type: number
+        allowStocks:
+          type: boolean
+        allowIndices:
+          type: boolean
+        allowForex:
+          type: boolean
+        requireReasoning:
+          type: boolean
+        requireStopLoss:
+          type: boolean
+        requireTargetPrice:
+          type: boolean
+      required:
+        - minConfidence
+        - allowStocks
+        - allowIndices
+        - allowForex
+        - requireReasoning
+        - requireStopLoss
+        - requireTargetPrice
+
+    IngestionLogEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        source:
+          type: string
+          enum: [agent, tradingview, manual]
+        symbol:
+          type: string
+        signalType:
+          type: string
+        accepted:
+          type: boolean
+        rejectionReason:
+          type: string
+          nullable: true
+        keyName:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - source
+        - symbol
+        - signalType
+        - accepted
+        - createdAt
+
+    TradingViewPayload:
+      type: object
+      properties:
+        ticker:
+          type: string
+        action:
+          type: string
+          description: "buy, sell, or hold"
+        price:
+          type: number
+        confidence:
+          type: number
+        target:
+          type: number
+        stop:
+          type: number
+        message:
+          type: string
+        timeframe:
+          type: string
+      required:
+        - ticker
+        - action
+        - price

@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * Trading Signal Dashboard API
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import * as zod from "zod";
 
@@ -28,7 +28,7 @@ export const GetSignalsResponseItem = zod.object({
   name: zod.string(),
   assetClass: zod.enum(["stocks", "indices", "forex"]),
   signalType: zod.enum(["buy", "sell", "hold"]),
-  confidence: zod.number().describe("Confidence percentage 0-100"),
+  confidence: zod.number(),
   currentPrice: zod.number(),
   targetPrice: zod.number(),
   stopLoss: zod.number(),
@@ -40,7 +40,7 @@ export const GetSignalsResponseItem = zod.object({
 export const GetSignalsResponse = zod.array(GetSignalsResponseItem);
 
 /**
- * @summary Create a new trading signal
+ * @summary Create a new trading signal (requires X-API-Key header)
  */
 export const CreateSignalBody = zod.object({
   symbol: zod.string(),
@@ -69,7 +69,7 @@ export const GetSignalResponse = zod.object({
   name: zod.string(),
   assetClass: zod.enum(["stocks", "indices", "forex"]),
   signalType: zod.enum(["buy", "sell", "hold"]),
-  confidence: zod.number().describe("Confidence percentage 0-100"),
+  confidence: zod.number(),
   currentPrice: zod.number(),
   targetPrice: zod.number(),
   stopLoss: zod.number(),
@@ -185,3 +185,108 @@ export const GetAssetsResponseItem = zod.object({
   marketCap: zod.string(),
 });
 export const GetAssetsResponse = zod.array(GetAssetsResponseItem);
+
+/**
+ * @summary List all API keys (values are masked)
+ */
+export const GetApiKeysResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  prefix: zod.string().describe("First 8 chars of key for identification"),
+  active: zod.boolean(),
+  lastUsedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const GetApiKeysResponse = zod.array(GetApiKeysResponseItem);
+
+/**
+ * @summary Create a new API key
+ */
+export const CreateApiKeyBody = zod.object({
+  name: zod.string(),
+});
+
+/**
+ * @summary Revoke an API key
+ */
+export const DeleteApiKeyParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Get current signal validation rules
+ */
+export const GetIngestionRulesResponse = zod.object({
+  id: zod.number(),
+  minConfidence: zod
+    .number()
+    .describe("Minimum confidence % to accept signal (0-100)"),
+  allowStocks: zod.boolean(),
+  allowIndices: zod.boolean(),
+  allowForex: zod.boolean(),
+  requireReasoning: zod.boolean(),
+  requireStopLoss: zod.boolean(),
+  requireTargetPrice: zod.boolean(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Update signal validation rules
+ */
+export const UpdateIngestionRulesBody = zod.object({
+  minConfidence: zod.number(),
+  allowStocks: zod.boolean(),
+  allowIndices: zod.boolean(),
+  allowForex: zod.boolean(),
+  requireReasoning: zod.boolean(),
+  requireStopLoss: zod.boolean(),
+  requireTargetPrice: zod.boolean(),
+});
+
+export const UpdateIngestionRulesResponse = zod.object({
+  id: zod.number(),
+  minConfidence: zod
+    .number()
+    .describe("Minimum confidence % to accept signal (0-100)"),
+  allowStocks: zod.boolean(),
+  allowIndices: zod.boolean(),
+  allowForex: zod.boolean(),
+  requireReasoning: zod.boolean(),
+  requireStopLoss: zod.boolean(),
+  requireTargetPrice: zod.boolean(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Get signal ingestion audit log
+ */
+export const GetIngestionLogQueryParams = zod.object({
+  status: zod.enum(["all", "accepted", "rejected"]).optional(),
+  limit: zod.coerce.number().optional(),
+});
+
+export const GetIngestionLogResponseItem = zod.object({
+  id: zod.number(),
+  source: zod.enum(["agent", "tradingview", "manual"]),
+  symbol: zod.string(),
+  signalType: zod.string(),
+  accepted: zod.boolean(),
+  rejectionReason: zod.string().nullish(),
+  keyName: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const GetIngestionLogResponse = zod.array(GetIngestionLogResponseItem);
+
+/**
+ * @summary Receive a TradingView alert and convert to signal
+ */
+export const TradingViewWebhookBody = zod.object({
+  ticker: zod.string(),
+  action: zod.string().describe("buy, sell, or hold"),
+  price: zod.number(),
+  confidence: zod.number().optional(),
+  target: zod.number().optional(),
+  stop: zod.number().optional(),
+  message: zod.string().optional(),
+  timeframe: zod.string().optional(),
+});

@@ -6,6 +6,8 @@ import {
   List,
   Eye,
   Activity,
+  Settings,
+  ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +17,11 @@ const navItems = [
   { path: "/portfolio", label: "Portfolio", icon: Briefcase },
   { path: "/positions", label: "Positions", icon: List },
   { path: "/watchlist", label: "Watchlist", icon: Eye },
+];
+
+const bottomNavItems = [
+  { path: "/ingestion", label: "Ingestion Log", icon: ScrollText },
+  { path: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -44,6 +51,31 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <nav className="flex-1 px-2 py-4 space-y-0.5">
           {navItems.map(({ path, label, icon: Icon }) => {
             const isActive = path === "/" ? location === "/" : location.startsWith(path);
+            return (
+              <Link
+                key={path}
+                href={path}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150 cursor-pointer group",
+                  isActive
+                    ? "bg-primary/15 text-primary border border-primary/25"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground border border-transparent"
+                )}
+              >
+                <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover:text-sidebar-foreground")} />
+                {label}
+                {isActive && (
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
+                )}
+              </Link>
+            );
+          })}
+
+          {/* Divider */}
+          <div className="border-t border-sidebar-border my-2" />
+
+          {bottomNavItems.map(({ path, label, icon: Icon }) => {
+            const isActive = location.startsWith(path);
             return (
               <Link
                 key={path}

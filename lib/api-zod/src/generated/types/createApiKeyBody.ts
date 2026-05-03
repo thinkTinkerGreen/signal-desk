@@ -6,8 +6,6 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export type SignalSummaryByAssetClass = {
-  stocks: number;
-  indices: number;
-  forex: number;
-};
+export interface CreateApiKeyBody {
+  name: string;
+}

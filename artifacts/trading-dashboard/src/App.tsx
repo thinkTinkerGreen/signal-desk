@@ -8,6 +8,8 @@ import { Signals } from "@/pages/Signals";
 import { Portfolio } from "@/pages/Portfolio";
 import { Positions } from "@/pages/Positions";
 import { Watchlist } from "@/pages/Watchlist";
+import { Settings } from "@/pages/Settings";
+import { IngestionLog } from "@/pages/IngestionLog";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -28,6 +30,8 @@ function Router() {
         <Route path="/portfolio" component={Portfolio} />
         <Route path="/positions" component={Positions} />
         <Route path="/watchlist" component={Watchlist} />
+        <Route path="/settings" component={Settings} />
+        <Route path="/ingestion" component={IngestionLog} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
