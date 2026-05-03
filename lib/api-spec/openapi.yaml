@@ -3,20 +3,27 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Trading Signal Dashboard API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: signals
+    description: Trading signals
+  - name: portfolio
+    description: Portfolio management
+  - name: positions
+    description: Open positions
+  - name: assets
+    description: Watchlist assets
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +31,187 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /signals:
+    get:
+      operationId: getSignals
+      tags: [signals]
+      summary: Get all trading signals
+      parameters:
+        - name: asset_class
+          in: query
+          schema:
+            type: string
+            enum: [stocks, indices, forex, all]
+          required: false
+        - name: signal_type
+          in: query
+          schema:
+            type: string
+            enum: [buy, sell, hold, all]
+          required: false
+      responses:
+        "200":
+          description: List of signals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Signal"
+    post:
+      operationId: createSignal
+      tags: [signals]
+      summary: Create a new trading signal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewSignal"
+      responses:
+        "201":
+          description: Signal created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Signal"
+
+  /signals/{id}:
+    get:
+      operationId: getSignal
+      tags: [signals]
+      summary: Get a single signal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Signal details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Signal"
+    delete:
+      operationId: deleteSignal
+      tags: [signals]
+      summary: Delete a signal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /signals/summary:
+    get:
+      operationId: getSignalSummary
+      tags: [signals]
+      summary: Get signal summary counts by type and asset class
+      responses:
+        "200":
+          description: Signal summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignalSummary"
+
+  /portfolio:
+    get:
+      operationId: getPortfolio
+      tags: [portfolio]
+      summary: Get portfolio overview
+      responses:
+        "200":
+          description: Portfolio overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Portfolio"
+
+  /portfolio/history:
+    get:
+      operationId: getPortfolioHistory
+      tags: [portfolio]
+      summary: Get portfolio value history for chart
+      responses:
+        "200":
+          description: Portfolio history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PortfolioDataPoint"
+
+  /positions:
+    get:
+      operationId: getPositions
+      tags: [positions]
+      summary: Get all open positions
+      responses:
+        "200":
+          description: List of positions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Position"
+    post:
+      operationId: createPosition
+      tags: [positions]
+      summary: Open a new position
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewPosition"
+      responses:
+        "201":
+          description: Position opened
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Position"
+
+  /positions/{id}:
+    delete:
+      operationId: closePosition
+      tags: [positions]
+      summary: Close a position
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Closed
+
+  /assets:
+    get:
+      operationId: getAssets
+      tags: [assets]
+      summary: Get watchlist assets with latest price info
+      responses:
+        "200":
+          description: List of assets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Asset"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +222,281 @@ components:
       required:
         - status
 
+    Signal:
+      type: object
+      properties:
+        id:
+          type: integer
+        symbol:
+          type: string
+        name:
+          type: string
+        assetClass:
+          type: string
+          enum: [stocks, indices, forex]
+        signalType:
+          type: string
+          enum: [buy, sell, hold]
+        confidence:
+          type: number
+          description: Confidence percentage 0-100
+        currentPrice:
+          type: number
+        targetPrice:
+          type: number
+        stopLoss:
+          type: number
+        riskReward:
+          type: number
+        timeframe:
+          type: string
+        reasoning:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - symbol
+        - name
+        - assetClass
+        - signalType
+        - confidence
+        - currentPrice
+        - targetPrice
+        - stopLoss
+        - riskReward
+        - timeframe
+        - reasoning
+        - generatedAt
+
+    NewSignal:
+      type: object
+      properties:
+        symbol:
+          type: string
+        name:
+          type: string
+        assetClass:
+          type: string
+          enum: [stocks, indices, forex]
+        signalType:
+          type: string
+          enum: [buy, sell, hold]
+        confidence:
+          type: number
+        currentPrice:
+          type: number
+        targetPrice:
+          type: number
+        stopLoss:
+          type: number
+        riskReward:
+          type: number
+        timeframe:
+          type: string
+        reasoning:
+          type: string
+      required:
+        - symbol
+        - name
+        - assetClass
+        - signalType
+        - confidence
+        - currentPrice
+        - targetPrice
+        - stopLoss
+        - riskReward
+        - timeframe
+        - reasoning
+
+    SignalSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+        buy:
+          type: integer
+        sell:
+          type: integer
+        hold:
+          type: integer
+        byAssetClass:
+          type: object
+          properties:
+            stocks:
+              type: integer
+            indices:
+              type: integer
+            forex:
+              type: integer
+          required:
+            - stocks
+            - indices
+            - forex
+        avgConfidence:
+          type: number
+      required:
+        - total
+        - buy
+        - sell
+        - hold
+        - byAssetClass
+        - avgConfidence
+
+    Portfolio:
+      type: object
+      properties:
+        totalValue:
+          type: number
+        cashBalance:
+          type: number
+        investedValue:
+          type: number
+        totalPnl:
+          type: number
+        totalPnlPercent:
+          type: number
+        dayPnl:
+          type: number
+        dayPnlPercent:
+          type: number
+        openPositions:
+          type: integer
+        winRate:
+          type: number
+        totalTrades:
+          type: integer
+      required:
+        - totalValue
+        - cashBalance
+        - investedValue
+        - totalPnl
+        - totalPnlPercent
+        - dayPnl
+        - dayPnlPercent
+        - openPositions
+        - winRate
+        - totalTrades
+
+    PortfolioDataPoint:
+      type: object
+      properties:
+        date:
+          type: string
+        value:
+          type: number
+      required:
+        - date
+        - value
+
+    Position:
+      type: object
+      properties:
+        id:
+          type: integer
+        symbol:
+          type: string
+        name:
+          type: string
+        assetClass:
+          type: string
+          enum: [stocks, indices, forex]
+        direction:
+          type: string
+          enum: [long, short]
+        quantity:
+          type: number
+        entryPrice:
+          type: number
+        currentPrice:
+          type: number
+        targetPrice:
+          type: number
+        stopLoss:
+          type: number
+        pnl:
+          type: number
+        pnlPercent:
+          type: number
+        openedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - symbol
+        - name
+        - assetClass
+        - direction
+        - quantity
+        - entryPrice
+        - currentPrice
+        - targetPrice
+        - stopLoss
+        - pnl
+        - pnlPercent
+        - openedAt
+
+    NewPosition:
+      type: object
+      properties:
+        symbol:
+          type: string
+        name:
+          type: string
+        assetClass:
+          type: string
+          enum: [stocks, indices, forex]
+        direction:
+          type: string
+          enum: [long, short]
+        quantity:
+          type: number
+        entryPrice:
+          type: number
+        targetPrice:
+          type: number
+        stopLoss:
+          type: number
+      required:
+        - symbol
+        - name
+        - assetClass
+        - direction
+        - quantity
+        - entryPrice
+        - targetPrice
+        - stopLoss
+
+    Asset:
+      type: object
+      properties:
+        id:
+          type: integer
+        symbol:
+          type: string
+        name:
+          type: string
+        assetClass:
+          type: string
+          enum: [stocks, indices, forex]
+        currentPrice:
+          type: number
+        change:
+          type: number
+        changePercent:
+          type: number
+        volume:
+          type: string
+        marketCap:
+          type: string
+      required:
+        - id
+        - symbol
+        - name
+        - assetClass
+        - currentPrice
+        - change
+        - changePercent
+        - volume
+        - marketCap

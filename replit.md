@@ -25,3 +25,41 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+
+## Artifacts
+
+### Trading Signal Dashboard (`artifacts/trading-dashboard`)
+- **Preview path**: `/`
+- **Kind**: react-vite web app
+- **Purpose**: Investment/trading signal dashboard for Stocks, Indices, and Forex
+- **Pages**: Dashboard `/`, Signals `/signals`, Portfolio `/portfolio`, Positions `/positions`, Watchlist `/watchlist`
+
+### API Server (`artifacts/api-server`)
+- **Preview path**: `/api`
+- **Kind**: Express API server
+- **Routes**: `/api/signals`, `/api/signals/summary`, `/api/portfolio`, `/api/portfolio/history`, `/api/positions`, `/api/assets`
+
+## Database Schema
+
+- `signals` — trading signals with symbol, asset class, signal type (buy/sell/hold), confidence, prices, R:R, reasoning
+- `positions` — open trading positions with entry/current/target/stop prices and P&L
+- `assets` — watchlist assets with current price and change data
+
+## Signal Integration
+
+Signals are currently seeded with mock data. The `/api/signals` POST endpoint accepts new signals from external agents/LLMs:
+```json
+{
+  "symbol": "AAPL",
+  "name": "Apple Inc.",
+  "assetClass": "stocks",
+  "signalType": "buy",
+  "confidence": 87,
+  "currentPrice": 189.45,
+  "targetPrice": 210.00,
+  "stopLoss": 178.00,
+  "riskReward": 2.8,
+  "timeframe": "1W",
+  "reasoning": "..."
+}
+```
